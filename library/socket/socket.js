@@ -17,10 +17,10 @@ Object.assign(Socket.prototype, {
   init: function () {
     this.emitter = new events.EventEmitter();
     if(this.opts.autoConnect) this.connect();
-    this._onConnect = this._onConnect.bind(this);
-    this._onDisconnect = this._onDisconnect.bind(this);
-    this._onConnectError = this._onConnectError.bind(this);
-    this._onMessage = this._onMessage.bind(this);
+    this.opts.engine._onConnect = this._onConnect.bind(this);
+    this.opts.engine._onDisconnect = this._onDisconnect.bind(this);
+    this.opts.engine._onConnectError = this._onConnectError.bind(this);
+    this.opts.engine._onMessage = this._onMessage.bind(this);
     this.emitter.on('handlePendedEvents', () => {
       this.pendedEvents.forEach(event => {
         this.emit(event.eventName, event.message);
@@ -34,10 +34,10 @@ Object.assign(Socket.prototype, {
   connect: function () {
     if(this.connected) return;
     this.opts.engine.connectSocket({url: this.url});
-    this.opts.engine.onSocketOpen(this._onConnect);
-    this.opts.engine.onSocketClose(this._onDisconnect);
-    this.opts.engine.onSocketError(this._onConnectError);
-    this.opts.engine.onSocketMessage(this._onMessage);
+    this.opts.engine.onSocketOpen(this.opts.engine._onConnect);
+    this.opts.engine.onSocketClose(this.opts.engine._onDisconnect);
+    this.opts.engine.onSocketError(this.opts.engine._onConnectError);
+    this.opts.engine.onSocketMessage(this.opts.engine._onMessage);
   },
   /**
    * 断开socket
