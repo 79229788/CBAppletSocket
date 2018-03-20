@@ -96,6 +96,12 @@ Object.assign(Sockets.prototype, {
    * @param data
    */
   broadcast: function (roomNames, eventName, data) {
+    if(roomNames === null) {
+      this.clients.forEach(socket => {
+        socket.emit(eventName, data);
+      });
+      return;
+    }
     roomNames = !_.isArray(roomNames) ? [roomNames] : roomNames;
     roomNames.forEach(roomName => {
       this.in(roomName);
