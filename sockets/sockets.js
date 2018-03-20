@@ -74,7 +74,7 @@ Object.assign(Sockets.prototype, {
    * 给当前内部的sockets全部发消息
    */
   emit: function (eventName, message) {
-    inClients.forEach(socket => {
+    this.inClients.forEach(socket => {
       socket.emit(eventName, message)
     });
     this.inClients = [];
@@ -84,10 +84,12 @@ Object.assign(Sockets.prototype, {
    */
   in: function (roomName) {
     const rooms = this.rooms[roomName];
-    rooms.forEach(data => {
-      const socket = this.clients[data.id];
-      if(socket) this.inClients.push(socket);
-    });
+    if(rooms) {
+      rooms.forEach(data => {
+        const socket = this.clients[data.id];
+        if(socket) this.inClients.push(socket);
+      });
+    }
   },
   /**
    * 向房间广播消息
