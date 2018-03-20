@@ -4,7 +4,7 @@ const socket = new Socket({
   url: 'ws://172.31.30.201:8888',
   debug: true,
   autoConnect: false,
-  engine: my,
+  engine: wx,
 });
 
 Page({
@@ -29,9 +29,7 @@ Page({
   },
   onTapConnect() {
     socket.connect();
-    socket.joinRoom('roomA').then(message => {
-      this.setData({message: message});
-    });
+    socket.emit('hi', 'hello');
   },
   onTapDisconnect() {
     socket.disconnect();

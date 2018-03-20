@@ -5,14 +5,15 @@ const Socket = function (options) {
     url: 'ws://localhost:8888',
     debug: false,
     autoConnect: false,
+    engine: null,
   }, options);
   this.url = this.opts.url;
   this.debug = this.opts.debug;
+  this.pendedEvents = [];
   this.init();
 };
 
 Object.assign(Socket.prototype, {
-  pendedEvents: [], //已挂载的事件
   init: function () {
     this.emitter = new events.EventEmitter();
     if(this.opts.autoConnect) this.connect();
@@ -32,18 +33,18 @@ Object.assign(Socket.prototype, {
    */
   connect: function () {
     if(this.connected) return;
-    my.connectSocket({url: this.url});
-    my.onSocketOpen(this._onConnect);
-    my.onSocketClose(this._onDisconnect);
-    my.onSocketError(this._onConnectError);
-    my.onSocketMessage(this._onMessage);
+    this.opts.engine.connectSocket({url: this.url});
+    this.opts.engine.onSocketOpen(this._onConnect);
+    this.opts.engine.onSocketClose(this._onDisconnect);
+    this.opts.engine.onSocketError(this._onConnectError);
+    this.opts.engine.onSocketMessage(this._onMessage);
   },
   /**
    * 断开socket
    */
   disconnect: function () {
     if(!this.connected) return;
-    my.closeSocket();
+    this.opts.engine.closeSocket();
   },
   /**
    * 是否在连接
@@ -114,17 +115,32 @@ Object.assign(Socket.prototype, {
     if(!this.isConnected()) {
       return this.pendedEvents.push({eventName: eventName, message: message});
     }
-    my.sendSocketMessage({
+    this.opts.engine.sendSocketMessage({
       data: JSON.stringify([eventName, message]),
     });
   },
   /**
    * 带有回应的消息提交
    * @param eventName
-   * @param object
+   * @param message
    */
-  emitBack: function (eventName, object) {
-
+  emitBack: function (eventName, message) {
+    return new Promise((ok, no) => {
+      this.on(eventName, data => {
+        if(data.statusCode !== 200) return no(data.message);
+        ok(data.message);
+      });
+      this.emit(eventName, message);
+    });
+  },
+  /**
+   * 加入房间
+   * @param roomName
+   * @param object
+   * @return {*}
+   */
+  joinRoom: function (roomName, object) {
+    return this.emitBack('joinRoom', Object.assign({}, object || {}, {roomName: roomName}));
   },
 });
 

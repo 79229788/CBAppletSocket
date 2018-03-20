@@ -1,16 +1,19 @@
 const WebSocket = require('ws');
 const events = require('events');
 const _ = require('lodash');
-const uuid = require('uuid/v1');
+const shortid = require('shortid');
 const utils = require('./utils');
 
 const Socket = function(ws, sockets) {
   this.ws = ws;
+  this.ws.socketId = shortid.generate();
   this.sockets = sockets;
   this.emitter = new events.EventEmitter();
-  this.id = uuid();
+  this.id = this.ws.socketId;
   this.server = utils.getIPAddress();
   this.sockets.sockets[this.id] = this;
+  this.rooms = [];          //当前所在的房间[房间名]
+  this.roomLocations = [];  //所在房间的位置[房间名，索引]
 };
 
 Object.assign(Socket.prototype, {
@@ -28,44 +31,35 @@ Object.assign(Socket.prototype, {
    * @param message
    */
   emit: function (eventName, message) {
-    if(this.ws.readyState !== WebSocket.OPEN) return;
+    if(this.ws.readyState !== WebSocket.OPEN || !this.ws.isAlive) return;
     this.ws.send(JSON.stringify([eventName, message]));
   },
   /**
-   * 向房间广播消息
-   * @param roomNames
+   * 回应消息
    * @param eventName
-   * @param data
+   * @param statusCode
+   * @param message
    */
-  broadcast: function (roomNames, eventName, data) {
-    roomNames = !_.isArray(roomNames) ? [roomNames] : roomNames;
-    const space = this.sockets;
-    roomNames.forEach(roomName => {
-      space.in(roomName);
-    });
-    space.emit(eventName, data);
-  },
-  /**
-   * 获取房间订阅数
-   * @param roomNames
-   */
-  subscribes: function (roomNames) {
-
+  res: function (eventName, statusCode, message) {
+    this.emit(eventName, {statusCode: statusCode, message: message})
   },
   /**
    * 加入房间
    * @param roomName
    */
   join: function (roomName) {
+    if(this.rooms.indexOf(roomName) >= 0) return;
     if(!this.sockets.rooms[roomName]) {
       this.sockets.rooms[roomName] = [{id: this.id, ip: this.server}];
+      this.roomLocations = [[roomName, 0]];
     }else {
       this.sockets.rooms[roomName].push({id: this.id, ip: this.server});
+      this.roomLocations.push([roomName, this.sockets.rooms[roomName].length - 1]);
     }
-    if(!this.ws.rooms) {
-      this.ws.rooms = [roomName]
+    if(!this.rooms) {
+      this.rooms = [roomName]
     }else {
-      this.ws.rooms.push(roomName);
+      this.rooms.push(roomName);
     }
   },
   /**
@@ -74,8 +68,8 @@ Object.assign(Socket.prototype, {
    */
   leave: function (roomName) {
     if(!this.sockets.rooms[roomName]) return;
-    _.remove(this.sockets.rooms[roomName], item => item === roomName);
-    _.remove(this.ws.rooms, item => item === roomName);
+    _.remove(this.sockets.rooms[roomName], item => item.id === this.id);
+    _.remove(this.rooms, item => item === roomName);
   },
 
 });

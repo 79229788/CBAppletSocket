@@ -1,0 +1,6 @@
+<view style="padding:20px;">
+  <view>连接状态：{{ status }}</view>
+  <view style="margin-top:10px;">收到消息：{{ message }}</view>
+  <button type="default" style="margin-top:10px;" bindtap="onTapConnect"> 连接 </button>
+  <button type="default" style="margin-top:10px;" bindtap="onTapDisconnect"> 断开 </button>
+</view>
