@@ -27,6 +27,10 @@ Page({
       this.setData({message: message});
     });
   },
+  onHide() {
+    socket.disconnect();
+    this.setData({message: 'no message'});
+  },
   onTapConnect() {
     socket.connect();
     socket.joinRoom('roomA').then(message => {

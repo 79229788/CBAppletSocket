@@ -9,5 +9,11 @@ io.on('connection', function(socket) {
     socket.join(roomName);
     socket.res('joinRoom', 200, io.subscribes(roomName).length);
   });
+  socket.on('disconnect', function (code) {
+    console.log('@@@close', code);
+  });
+  socket.on('error', function (error) {
+    console.log('@@@close', error);
+  });
 });
 

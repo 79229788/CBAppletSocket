@@ -31,9 +31,10 @@ Object.assign(Sockets.prototype, {
     });
     ws.on('close', (code) => {
       this.removeSocket(ws);
+      socket.emitter.emit('disconnect', code);
     });
-    ws.on('error',  (error) => {
-      console.log(error);
+    ws.on('error', (error) => {
+      socket.emitter.emit('error', error);
     });
     ws.on('pong', () => {
       ws.isAlive = true;
