@@ -11,9 +11,9 @@ const Socket = function(ws, sockets) {
   this.emitter = new events.EventEmitter();
   this.id = this.ws.socketId;
   this.server = utils.getIPAddress();
-  this.sockets.sockets[this.id] = this;
   this.rooms = [];          //当前所在的房间[房间名]
   this.roomLocations = [];  //所在房间的位置[房间名，索引]
+  this.sockets.clients[this.id] = this;
 };
 
 Object.assign(Socket.prototype, {

@@ -8,8 +8,8 @@ const Sockets = function(server, options) {
   this.wss = new WebSocket.Server({ server });
   this.emitter = new events.EventEmitter();
   this.rooms = {};
-  this.sockets = {};
-  this.inSockets = [];
+  this.clients = {};
+  this.inClients = [];
   this.wss.on('connection', this.connection.bind(this));
   this.heartbeat(30000);
 };
@@ -44,7 +44,7 @@ Object.assign(Sockets.prototype, {
    */
   heartbeat: function (interval) {
     setInterval(() => {
-      _.each(this.sockets, (socket) => {
+      _.each(this.clients, (socket) => {
         if(socket.ws.isAlive === false) return socket.ws.terminate();
         socket.ws.isAlive = false;
         socket.ws.ping();
@@ -55,12 +55,12 @@ Object.assign(Sockets.prototype, {
    * 移除Socket
    */
   removeSocket: function (ws) {
-    const socket = this.sockets[ws.socketId];
+    const socket = this.clients[ws.socketId];
     const roomLocations = socket.roomLocations;
     roomLocations.forEach(location => {
       this.rooms[location[0]].splice(location[1], 1);
     });
-    delete this.sockets[ws.socketId];
+    delete this.clients[ws.socketId];
   },
   /**
    * 事件监听
@@ -74,10 +74,10 @@ Object.assign(Sockets.prototype, {
    * 给当前内部的sockets全部发消息
    */
   emit: function (eventName, message) {
-    inSockets.forEach(socket => {
+    inClients.forEach(socket => {
       socket.emit(eventName, message)
     });
-    this.inSockets = [];
+    this.inClients = [];
   },
   /**
    * 给当前内部添加sockets
@@ -85,8 +85,8 @@ Object.assign(Sockets.prototype, {
   in: function (roomName) {
     const rooms = this.rooms[roomName];
     rooms.forEach(data => {
-      const socket = this.sockets[data.id];
-      if(socket) this.inSockets.push(socket);
+      const socket = this.clients[data.id];
+      if(socket) this.inClients.push(socket);
     });
   },
   /**
