@@ -13,8 +13,5 @@ io.on('connection', function(socket) {
   socket.on('disconnect', function (code) {
     console.log('@@@close', code);
   });
-  socket.on('error', function (error) {
-    console.log('@@@error', error);
-  });
 });
 

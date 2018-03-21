@@ -34,7 +34,7 @@ Object.assign(Sockets.prototype, {
       socket.emitter.emit('disconnect', code);
     });
     ws.on('error', (error) => {
-      socket.emitter.emit('error', error);
+      socket.emitter.emit('connect_error', {code: error.code, message: error.message});
     });
     ws.on('pong', () => {
       ws.isAlive = true;
