@@ -17,21 +17,30 @@ Object.assign(Socket.prototype, {
   init: function () {
     this.emitter = new events.EventEmitter();
     if(this.opts.autoConnect) this.connect();
-    my._onConnect = this._onConnect.bind(this);
-    my._onDisconnect = this._onDisconnect.bind(this);
-    my._onConnectError = this._onConnectError.bind(this);
-    my._onMessage = this._onMessage.bind(this);
+    this._onConnect = this._onConnect.bind(this);
+    this._onDisconnect = this._onDisconnect.bind(this);
+    this._onConnectError = this._onConnectError.bind(this);
+    this._onMessage = this._onMessage.bind(this);
     this.emitter.on('handlePendedEvents', () => {
       this.pendedEvents.forEach(event => {
         this.emit(event.eventName, event.message);
       });
       this.pendedEvents = [];
     });
+    my.connectSocket({url: 'ws://192.168.0.189:8888'});
+    my.onSocketOpen(() => {
+      console.log('@@@open');
+    });
+    my.onSocketClose(() => {
+      console.log('@@@close');
+    });
+    // this.connect();
+    // my.onSocketOpen(this._onConnect);
+    // my.onSocketClose(this._onDisconnect);
+    // my.onSocketError(this._onConnectError);
+    // my.onSocketMessage(this._onMessage);
     this.emitter.on('connecting', () => {
-      my.onSocketOpen(my._onConnect);
-      my.onSocketClose(my._onDisconnect);
-      my.onSocketError(my._onConnectError);
-      my.onSocketMessage(my._onMessage);
+
     });
     this.emitter.on('disconnect', () => {
 
@@ -41,7 +50,7 @@ Object.assign(Socket.prototype, {
    * 连接socket
    */
   connect: function () {
-    if(this.connected) return;
+    //if(this.connected) return;
     my.connectSocket({url: this.url});
     this.emitter.emit('connecting');
   },
@@ -49,7 +58,7 @@ Object.assign(Socket.prototype, {
    * 断开socket
    */
   disconnect: function () {
-    if(!this.connected) return;
+    //if(!this.connected) return;
     my.closeSocket();
   },
   /**
