@@ -29,12 +29,7 @@ Page({
   },
   onTapConnect() {
     my.connectSocket({url: 'ws://192.168.0.189:8888'});
-    my.onSocketOpen(() => {
-      console.log('@@@open');
-    });
-    my.onSocketClose(() => {
-      console.log('@@@close');
-    });
+
     //my.socket.connect();
     // socket.joinRoom('roomA').then(message => {
     //   this.setData({message: message});

@@ -4,6 +4,7 @@ const Sockets = require('./sockets');
 const io = new Sockets(server);
 
 io.on('connection', function(socket) {
+  console.log('@@@open');
   socket.on('joinRoom', function(message) {
     const roomName = message.roomName;
     socket.join(roomName);
@@ -13,7 +14,7 @@ io.on('connection', function(socket) {
     console.log('@@@close', code);
   });
   socket.on('error', function (error) {
-    console.log('@@@close', error);
+    console.log('@@@error', error);
   });
 });
 
