@@ -16,25 +16,27 @@ const Socket = function (options) {
 Object.assign(Socket.prototype, {
   init: function () {
     this.emitter = new events.EventEmitter();
+    this._onConnect = this._onConnect.bind(this);
+    this._onDisconnect = this._onDisconnect.bind(this);
+    this._onConnectError = this._onConnectError.bind(this);
+    this._onMessage = this._onMessage.bind(this);
     if(this.opts.autoConnect) this.connect();
-    my._onConnect = this._onConnect.bind(this);
-    my._onDisconnect = this._onDisconnect.bind(this);
-    my._onConnectError = this._onConnectError.bind(this);
-    my._onMessage = this._onMessage.bind(this);
     this.emitter.on('handlePendedEvents', () => {
       this.pendedEvents.forEach(event => {
         this.emit(event.eventName, event.message);
       });
       this.pendedEvents = [];
     });
-    this.emitter.on('connecting', () => {
-      my.onSocketOpen(my._onConnect);
-      my.onSocketClose(my._onDisconnect);
-      my.onSocketError(my._onConnectError);
-      my.onSocketMessage(my._onMessage);
+    this.emitter.on('connect', () => {
+      this.opts.engine.onSocketClose(this._onDisconnect);
+      this.opts.engine.onSocketError(this._onConnectError);
+      this.opts.engine.onSocketMessage(this._onMessage);
     });
     this.emitter.on('disconnect', () => {
-
+      if(this.opts.engine.offSocketOpen) this.opts.engine.offSocketOpen(this._onConnect);
+      if(this.opts.engine.offSocketClose) this.opts.engine.offSocketClose(this._onDisconnect);
+      if(this.opts.engine.offSocketError) this.opts.engine.offSocketError(this._onConnectError);
+      if(this.opts.engine.offSocketMessage) this.opts.engine.offSocketMessage(this._onMessage);
     });
   },
   /**
@@ -42,15 +44,15 @@ Object.assign(Socket.prototype, {
    */
   connect: function () {
     if(this.connected) return;
-    my.connectSocket({url: this.url});
-    this.emitter.emit('connecting');
+    this.opts.engine.connectSocket({url: this.url});
+    this.opts.engine.onSocketOpen(this._onConnect);
   },
   /**
    * 断开socket
    */
   disconnect: function () {
     if(!this.connected) return;
-    my.closeSocket();
+    this.opts.engine.closeSocket();
   },
   /**
    * 是否在连接
@@ -62,7 +64,6 @@ Object.assign(Socket.prototype, {
     this.connected = true;
     this.emitter.emit('handlePendedEvents');
     this.emitter.emit('connect', this);
-    if(this.onConnect) this.onConnect();
     if (this.debug) {
       console.log(
         '\n' +
@@ -77,7 +78,6 @@ Object.assign(Socket.prototype, {
   _onDisconnect: function () {
     this.connected = false;
     this.emitter.emit('disconnect', this);
-    if(this.onDisconnect) this.onDisconnect();
     if (this.debug) {
       console.log('====================================');
       console.log('Socket was disconnected from Page.');
@@ -87,7 +87,6 @@ Object.assign(Socket.prototype, {
   _onConnectError: function (error) {
     this.connected = false;
     this.emitter.emit('connect_error', error);
-    if(this.onConnectError) this.onConnectError();
     if (this.debug) {
       console.log('====================================');
       console.log('Socket found connect error from Page.');
@@ -121,7 +120,7 @@ Object.assign(Socket.prototype, {
     if(!this.isConnected()) {
       return this.pendedEvents.push({eventName: eventName, message: message});
     }
-    my.sendSocketMessage({
+    this.opts.engine.sendSocketMessage({
       data: JSON.stringify([eventName, message]),
     });
   },
@@ -147,6 +146,15 @@ Object.assign(Socket.prototype, {
    */
   joinRoom: function (roomName, object) {
     return this.emitBack('joinRoom', Object.assign({}, object || {}, {roomName: roomName}));
+  },
+  /**
+   * 离开房间
+   * @param roomName
+   * @param object
+   * @return {*}
+   */
+  leaveRoom: function (roomName, object) {
+    return this.emitBack('leaveRoom', Object.assign({}, object || {}, {roomName: roomName}));
   },
 });
 
