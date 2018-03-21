@@ -27,17 +27,18 @@ Object.assign(Socket.prototype, {
       });
       this.pendedEvents = [];
     });
-    this.emitter.on('connect', () => {
-      this.opts.engine.onSocketClose(this._onDisconnect);
-      this.opts.engine.onSocketError(this._onConnectError);
-      this.opts.engine.onSocketMessage(this._onMessage);
-    });
     this.emitter.on('disconnect', () => {
-      if(this.opts.engine.offSocketOpen) this.opts.engine.offSocketOpen(this._onConnect);
-      if(this.opts.engine.offSocketClose) this.opts.engine.offSocketClose(this._onDisconnect);
-      if(this.opts.engine.offSocketError) this.opts.engine.offSocketError(this._onConnectError);
-      if(this.opts.engine.offSocketMessage) this.opts.engine.offSocketMessage(this._onMessage);
+      this.offListenerAllEvents();
     });
+    this.emitter.on('connect_error', () => {
+      this.offListenerAllEvents();
+    });
+  },
+  offListenerAllEvents: function () {
+    if(this.opts.engine.offSocketOpen) this.opts.engine.offSocketOpen(this._onConnect);
+    if(this.opts.engine.offSocketClose) this.opts.engine.offSocketClose(this._onDisconnect);
+    if(this.opts.engine.offSocketError) this.opts.engine.offSocketError(this._onConnectError);
+    if(this.opts.engine.offSocketMessage) this.opts.engine.offSocketMessage(this._onMessage);
   },
   /**
    * 连接socket
