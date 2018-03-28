@@ -9,7 +9,6 @@ const Sockets = function(server, options) {
   this.emitter = new events.EventEmitter();
   this.rooms = {};
   this.clients = {};
-  this.inClients = [];
   this.wss.on('connection', this.connection.bind(this));
   this.heartbeat(30000);
 };
@@ -45,23 +44,31 @@ Object.assign(Sockets.prototype, {
    */
   heartbeat: function (interval) {
     setInterval(() => {
-      _.each(this.clients, (socket) => {
-        if(socket.ws.isAlive === false) return socket.ws.terminate();
-        socket.ws.isAlive = false;
-        socket.ws.ping();
-      });
+      setTimeout(() => {
+        _.each(this.clients, (socket, socketId) => {
+          if(socket.ws.isAlive === false) {
+            this.removeSocket(socketId);
+            socket.ws.terminate();
+            return;
+          }
+          socket.ws.isAlive = false;
+          socket.ws.ping();
+        });
+      }, 0);
     }, interval);
   },
   /**
    * 移除Socket
    */
   removeSocket: function (ws) {
-    const socket = this.clients[ws.socketId];
-    const roomLocations = socket.roomLocations;
-    roomLocations.forEach(location => {
-      this.rooms[location[0]].splice(location[1], 1);
+    const socketId = _.isObject(ws) ? ws.socketId : ws;
+    const socket = this.clients[socketId];
+    if(!socket) return;
+    const rooms = socket.rooms || [];
+    rooms.forEach(room => {
+      if(this.rooms[room]) delete this.rooms[room][socketId]
     });
-    delete this.clients[ws.socketId];
+    delete this.clients[socketId];
   },
   /**
    * 事件监听
@@ -70,27 +77,6 @@ Object.assign(Sockets.prototype, {
    */
   on: function (eventName, listener) {
     this.emitter.on(eventName, listener);
-  },
-  /**
-   * 给当前内部的sockets全部发消息
-   */
-  emit: function (eventName, message) {
-    this.inClients.forEach(socket => {
-      socket.emit(eventName, message)
-    });
-    this.inClients = [];
-  },
-  /**
-   * 给当前内部添加sockets
-   */
-  in: function (roomName) {
-    const rooms = this.rooms[roomName];
-    if(rooms) {
-      rooms.forEach(data => {
-        const socket = this.clients[data.id];
-        if(socket) this.inClients.push(socket);
-      });
-    }
   },
   /**
    * 向房间广播消息
@@ -105,11 +91,14 @@ Object.assign(Sockets.prototype, {
       });
       return;
     }
-    roomNames = !_.isArray(roomNames) ? [roomNames] : roomNames;
+    roomNames = _.isArray(roomNames) ? roomNames : [roomNames];
     roomNames.forEach(roomName => {
-      this.in(roomName);
+      const sockets = this.rooms[roomName];
+      _.each(sockets, (socketInfo, socketId) => {
+        const socket = this.clients[socketId];
+        if(socket) socket.emit(eventName, data);
+      });
     });
-    this.emit(eventName, data);
   },
   /**
    * 获取房间的订阅者的ID
@@ -120,7 +109,7 @@ Object.assign(Sockets.prototype, {
     let subscribes = [];
     roomNames.forEach(roomName => {
       const sockets = this.rooms[roomName];
-      subscribes = subscribes.concat(sockets);
+      subscribes = subscribes.concat(Object.values(sockets));
     });
     return subscribes;
   },

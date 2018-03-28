@@ -41,26 +41,18 @@ Object.assign(Socket.prototype, {
    * @param message
    */
   res: function (eventName, statusCode, message) {
-    this.emit(eventName, {statusCode: statusCode, message: message})
+    this.emit(eventName + '@back', {statusCode: statusCode, message: message})
   },
   /**
    * 加入房间
    * @param roomName
    */
   join: function (roomName) {
-    if(this.rooms.indexOf(roomName) >= 0) return;
-    if(!this.sockets.rooms[roomName]) {
-      this.sockets.rooms[roomName] = [{id: this.id, ip: this.server}];
-      this.roomLocations = [[roomName, 0]];
-    }else {
-      this.sockets.rooms[roomName].push({id: this.id, ip: this.server});
-      this.roomLocations.push([roomName, this.sockets.rooms[roomName].length - 1]);
-    }
-    if(!this.rooms) {
-      this.rooms = [roomName]
-    }else {
-      this.rooms.push(roomName);
-    }
+    if(this.rooms[roomName]) return;
+    if(!this.sockets.rooms[roomName]) this.sockets.rooms[roomName] = {};
+    this.sockets.rooms[roomName][this.id] = {id: this.id, server: this.server};
+    if(!this.rooms) this.rooms = {};
+    this.rooms[roomName] = 1;
   },
   /**
    * 离开房间
@@ -68,8 +60,8 @@ Object.assign(Socket.prototype, {
    */
   leave: function (roomName) {
     if(!this.sockets.rooms[roomName]) return;
-    _.remove(this.sockets.rooms[roomName], item => item.id === this.id);
-    _.remove(this.rooms, item => item === roomName);
+    delete this.rooms[roomName];
+    delete this.sockets.rooms[roomName][this.id];
   },
 
 });
