@@ -64,8 +64,8 @@ Object.assign(Sockets.prototype, {
     const socketId = _.isObject(ws) ? ws.socketId : ws;
     const socket = this.clients[socketId];
     if(!socket) return;
-    const rooms = socket.rooms || [];
-    rooms.forEach(room => {
+    const rooms = socket.rooms || {};
+    Object.keys(rooms).forEach(room => {
       if(this.rooms[room]) delete this.rooms[room][socketId]
     });
     delete this.clients[socketId];
