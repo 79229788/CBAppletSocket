@@ -94,10 +94,12 @@ Object.assign(Sockets.prototype, {
     roomNames = _.isArray(roomNames) ? roomNames : [roomNames];
     roomNames.forEach(roomName => {
       const sockets = this.rooms[roomName];
-      _.each(sockets, (socketInfo, socketId) => {
-        const socket = this.clients[socketId];
-        if(socket) socket.emit(eventName, data);
-      });
+      if(sockets) {
+        _.each(sockets, (socketInfo, socketId) => {
+          const socket = this.clients[socketId];
+          if(socket) socket.emit(eventName, data);
+        });
+      }
     });
   },
   /**
@@ -109,7 +111,7 @@ Object.assign(Sockets.prototype, {
     let subscribes = [];
     roomNames.forEach(roomName => {
       const sockets = this.rooms[roomName];
-      subscribes = subscribes.concat(Object.values(sockets));
+      if(sockets) subscribes = subscribes.concat(Object.values(sockets));
     });
     return subscribes;
   },
